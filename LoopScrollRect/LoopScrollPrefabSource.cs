@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace UnityEngine.UI
 {
@@ -31,6 +32,12 @@ namespace UnityEngine.UI
         /// 模板
         /// </summary>
         private GameObject m_templateGo;
+
+        [HideInInspector]
+        public Func<string, string, GameObject> m_loadGoFromAB;
+
+        [HideInInspector]
+        public Action<string> m_unloadAB;
 
         /// <summary>
         /// 池节点
@@ -76,7 +83,14 @@ namespace UnityEngine.UI
             if (assetBundle != null &&
                 m_gameObject == null)
             {
-                m_templateGo = GameObject.Instantiate(AssetBundleManager.Instance.LoadBundleSync<GameObject>(assetBundle, assetName));
+                if (m_loadGoFromAB != null)
+                {
+                    m_templateGo = GameObject.Instantiate(m_loadGoFromAB(assetBundle, assetName));
+                }
+                else
+                {
+                    Debug.LogError("m_loadGoFromAB is null!");
+                }
             }
             else
             {
@@ -110,7 +124,14 @@ namespace UnityEngine.UI
             if (assetBundle != null &&
                 m_gameObject == null)
             {
-                AssetBundleManager.Instance.ReleaseBundle(assetBundle);
+                if (m_unloadAB != null)
+                {
+                    m_unloadAB(assetBundle);
+                }
+                else
+                {
+                    Debug.LogError("m_unloadAB is null!");
+                }
             }
         }
 
