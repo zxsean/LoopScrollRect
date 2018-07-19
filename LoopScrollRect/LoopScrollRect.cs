@@ -710,33 +710,32 @@ namespace UnityEngine.UI
             // 绑定点击事件
             if (m_clickItemCallBack != null)
             {
-                // 获取LoopScrollRectItem,以及IPointerClickHandler,防止出现点不动!
-                var _component = _tf.GetComponent<IPointerClickHandler>();
-                if (_component != null)
+                // 获取IDragHandler防止出现拖拽不动
+                if (_tf.GetComponent<IDragHandler>() != null)
                 {
-                    if (_component is LoopScrollRectItem)
+                    //if (_component is LoopScrollRectItem)
+                    //{
+                    //    // 不处理
+                    //}
                     {
-                        // 不处理
-                    }
-                    else
-                    {
-                        Debug.LogError("Item already has IPointerClickHandler!");
+                        Debug.LogError("Item already has IDragHandler!");
 
                         return;
                     }
                 }
                 // 添加
-                else
+                var _component = _tf.gameObject.GetComponent<LoopScrollRectItem>();
+
+                if (_component == null)
                 {
                     _component = _tf.gameObject.AddComponent<LoopScrollRectItem>();
                 }
 
-                LoopScrollRectItem _item = _component as LoopScrollRectItem;
-                _item.Index = _index;
+                _component.Index = _index;
 
-                if (_item.m_clickItemCallBack == null)
+                if (_component.m_clickItemCallBack == null)
                 {
-                    _item.m_clickItemCallBack = m_clickItemCallBack;
+                    _component.m_clickItemCallBack = m_clickItemCallBack;
                 }
             }
         }
