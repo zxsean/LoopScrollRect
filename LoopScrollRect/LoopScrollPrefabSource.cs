@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Client.Library;
+using Client.Library.TMNSUtility;
+using System;
 using System.Collections.Generic;
 
 namespace UnityEngine.UI
@@ -6,22 +8,20 @@ namespace UnityEngine.UI
     [System.Serializable]
     public class LoopScrollPrefabSource
     {
-        public const string __POOLSNAME = "[ItemPool]";
+        public const string __POOL_NAME = "[ItemPool]";
 
         /// <summary>
         /// 池节点
         /// </summary>
         public Transform m_poolGameObject;
 
-        // 以下2种2选1
         public GameObject m_gameObject;
 
-        public string assetBundle;
-        public string assetName;
+        public string m_assetName;
 
-        public int poolSize = 5;
+        public int m_poolSize = 5;
 
-        private bool inited = false;
+        private bool m_inited = false;
 
         /// <summary>
         /// 池
@@ -33,37 +33,42 @@ namespace UnityEngine.UI
         /// </summary>
         private GameObject m_templateGo;
 
-        [HideInInspector]
-        public Func<string, string, GameObject> m_loadGoFromAB;
+        /// <summary>
+        /// 模板
+        /// </summary>
+        public GameObject TemplateGo => m_templateGo;
 
         [HideInInspector]
-        public Action<string> m_unloadAB;
+        public static Func<string, GameObject> m_loadGoFromAB;
+
+        [HideInInspector]
+        public static Action<string> m_unloadAB;
 
         /// <summary>
         /// 池节点
         /// </summary>
         public Transform PoolGameObject
         {
-            set { m_poolGameObject = value; }
+            set => m_poolGameObject = value;
         }
 
         public virtual GameObject GetObject()
         {
-            if (!inited)
+            if (!m_inited)
             {
                 InitPool();
 
-                inited = true;
+                m_inited = true;
             }
 
             return GetObjectFromPool();
         }
 
-        public virtual void ReturnObject(Transform go)
+        public virtual void ReturnObject(Transform _go)
         {
-            go.SendMessage("ScrollCellReturn", SendMessageOptions.DontRequireReceiver);
+            _go.SendMessage("ScrollCellReturn", SendMessageOptions.DontRequireReceiver);
 
-            ReturnObjectToPool(go.gameObject);
+            ReturnObjectToPool(_go.gameObject);
         }
 
         /// <summary>
@@ -72,48 +77,62 @@ namespace UnityEngine.UI
         private void InitPool()
         {
             if (m_gameObject == null &&
-                assetBundle == null)
+                m_assetName == null)
             {
                 Debug.LogError("no set template!!!");
 
                 return;
             }
 
-            // Ab加载
-            if (assetBundle != null &&
+            if (m_assetName != null &&
                 m_gameObject == null)
             {
                 if (m_loadGoFromAB != null)
                 {
-                    m_templateGo = GameObject.Instantiate(m_loadGoFromAB(assetBundle, assetName));
+                    m_templateGo = Object.Instantiate(m_loadGoFromAB(m_assetName));
                 }
                 else
                 {
-                    Debug.LogError("m_loadGoFromAB is null!");
+                    LogUtils.LogError("m_loadGoFromAB is null!");
+
+                    return;
                 }
             }
             else
             {
+                if (m_gameObject == null)
+                {
+                    LogUtils.LogError("m_gameObject is null!");
+
+                    return;
+                }
+
                 //m_templateGo = GameObject.Instantiate(m_gameObject);
                 m_templateGo = m_gameObject;
 
                 m_gameObject.SetActive(false);
             }
 
-            // 如果没有赋值就往Template下面丢
-            if (m_poolGameObject == null)
+            if (m_poolGameObject == null &&
+                m_gameObject != null)
             {
                 m_poolGameObject = m_gameObject.transform;
             }
 
-            int _s = poolSize - m_queue.Count;
+            int _size = m_poolSize - m_queue.Count;
 
             m_templateGo.transform.SetParent(m_poolGameObject);
 
             // 创建池
-            for (int i = 0; i < _s; ++i)
+            for (int i = 0; i < _size; ++i)
             {
-                m_queue.Enqueue(GameObject.Instantiate(m_templateGo));
+                GameObject _poolItem = Object.Instantiate(m_templateGo);
+
+                _poolItem.name = _poolItem.name.Replace("(Clone)", "");
+
+                _poolItem.SetParent(m_poolGameObject);
+
+                m_queue.Enqueue(_poolItem);
             }
 
             m_templateGo.SetActive(false);
@@ -121,12 +140,12 @@ namespace UnityEngine.UI
 
         public void DeInitPool()
         {
-            if (assetBundle != null &&
+            if (m_assetName != null &&
                 m_gameObject == null)
             {
                 if (m_unloadAB != null)
                 {
-                    m_unloadAB(assetBundle);
+                    m_unloadAB(m_assetName);
                 }
                 else
                 {
@@ -143,13 +162,18 @@ namespace UnityEngine.UI
             }
             else
             {
-                // 翻倍
-                for (int i = 0; i < poolSize; ++i)
+                for (int i = 0; i < m_poolSize; ++i)
                 {
-                    m_queue.Enqueue(GameObject.Instantiate(m_templateGo));
+                    GameObject _poolItem = Object.Instantiate(m_templateGo);
+
+                    _poolItem.name = _poolItem.name.Replace("(Clone)", "");
+
+                    _poolItem.SetParent(m_poolGameObject);
+
+                    m_queue.Enqueue(_poolItem);
                 }
 
-                poolSize *= 2;
+                m_poolSize *= 2;
 
                 return m_queue.Dequeue();
             }
@@ -157,9 +181,9 @@ namespace UnityEngine.UI
 
         private void ReturnObjectToPool(GameObject _go)
         {
-            if (m_queue.Count == poolSize)
+            if (m_queue.Count == m_poolSize)
             {
-                GameObject.Destroy(_go);
+                Object.Destroy(_go);
             }
             else
             {

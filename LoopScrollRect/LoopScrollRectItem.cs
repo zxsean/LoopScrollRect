@@ -4,33 +4,36 @@ using UnityEngine.EventSystems;
 namespace UnityEngine.UI
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
-    public class LoopScrollRectItem : MonoBehaviour, IPointerClickHandler
+    public class LoopScrollRectItem : MonoBehaviour, IPointerClickHandler, ILoopScrollCellReturn
     {
         /// <summary>
         /// 点击事件
         /// </summary>
         public Action<Transform, int> m_clickItemCallBack;
 
-        private int m_index;
+        [SerializeField]
+        private int m_index = -1;
 
         public int Index
         {
-            get { return m_index; }
-            set { m_index = value; }
+            get => m_index;
+            set => m_index = value;
         }
 
         /// <summary>
         /// 继承点击事件
         /// </summary>
-        /// <param name="eventData"></param>
-        public void OnPointerClick(PointerEventData eventData)
+        /// <param name="_eventData"></param>
+        public void OnPointerClick(PointerEventData _eventData)
         {
-            if (m_clickItemCallBack != null)
-            {
-                m_clickItemCallBack(this.transform, m_index);
-            }
+            m_clickItemCallBack?.Invoke(this.transform, m_index);
+        }
+
+        public void ScrollCellReturn()
+        {
+            m_index = -1;
         }
     }
 }

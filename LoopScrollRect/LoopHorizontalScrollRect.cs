@@ -1,13 +1,26 @@
-using UnityEngine;
-using System.Collections;
-
 namespace UnityEngine.UI
 {
     [AddComponentMenu("UI/Loop Horizontal Scroll Rect", 50)]
     [DisallowMultipleComponent]
     public class LoopHorizontalScrollRect : LoopScrollRect
     {
-        protected override float GetSize(RectTransform item)
+        protected override float GetTemplateSize()
+        {
+            float _size = contentSpacing;
+
+            if (m_GridLayout != null)
+            {
+                _size += m_GridLayout.cellSize.x;
+            }
+            else
+            {
+                _size += LayoutUtility.GetPreferredWidth(m_prefabSource.TemplateGo.GetComponent<RectTransform>());
+            }
+
+            return _size;
+        }
+
+        protected override float GetSize(RectTransform _item)
         {
             float size = contentSpacing;
             if (m_GridLayout != null)
@@ -16,7 +29,7 @@ namespace UnityEngine.UI
             }
             else
             {
-                size += LayoutUtility.GetPreferredWidth(item);
+                size += LayoutUtility.GetPreferredWidth(_item);
             }
             return size;
         }
@@ -46,23 +59,13 @@ namespace UnityEngine.UI
         protected override bool UpdateItems(Bounds viewBounds, Bounds contentBounds)
         {
             bool changed = false;
+
             if (viewBounds.max.x > contentBounds.max.x)
             {
                 float size = NewItemAtEnd(), totalSize = size;
                 while (size > 0 && viewBounds.max.x > contentBounds.max.x + totalSize)
                 {
                     size = NewItemAtEnd();
-                    totalSize += size;
-                }
-                if (totalSize > 0)
-                    changed = true;
-            }
-            else if (viewBounds.max.x < contentBounds.max.x - threshold)
-            {
-                float size = DeleteItemAtEnd(), totalSize = size;
-                while (size > 0 && viewBounds.max.x < contentBounds.max.x - threshold - totalSize)
-                {
-                    size = DeleteItemAtEnd();
                     totalSize += size;
                 }
                 if (totalSize > 0)
@@ -80,7 +83,20 @@ namespace UnityEngine.UI
                 if (totalSize > 0)
                     changed = true;
             }
-            else if (viewBounds.min.x > contentBounds.min.x + threshold)
+
+            if (viewBounds.max.x < contentBounds.max.x - threshold)
+            {
+                float size = DeleteItemAtEnd(), totalSize = size;
+                while (size > 0 && viewBounds.max.x < contentBounds.max.x - threshold - totalSize)
+                {
+                    size = DeleteItemAtEnd();
+                    totalSize += size;
+                }
+                if (totalSize > 0)
+                    changed = true;
+            }
+
+            if (viewBounds.min.x > contentBounds.min.x + threshold)
             {
                 float size = DeleteItemAtStart(), totalSize = size;
                 while (size > 0 && viewBounds.min.x > contentBounds.min.x + threshold + totalSize)
@@ -91,6 +107,7 @@ namespace UnityEngine.UI
                 if (totalSize > 0)
                     changed = true;
             }
+
             return changed;
         }
     }
